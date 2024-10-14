@@ -8,15 +8,22 @@ import { Spacer } from "@pcd/passport-ui";
 import { PCD } from "@pcd/pcd-types";
 import { isPODTicketPCD } from "@pcd/pod-ticket-pcd";
 import { uniqWith } from "lodash";
-import { ReactElement, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  ReactElement,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import SwipableViews from "react-swipeable-views";
 import styled, { FlattenSimpleInterpolation, css } from "styled-components";
 import { AppContainer } from "../../../components/shared/AppContainer";
 import { CardBody } from "../../../components/shared/PCDCard";
 import {
   useDispatch,
-  useLoadedIssuedPCDs,
+  useIsSyncSettled,
   usePCDs,
   useSelf,
   useUserForcedToLogout
@@ -30,6 +37,7 @@ import { TicketCard, TicketCardHeight } from "../../shared/TicketCard";
 import { Typography } from "../../shared/Typography";
 import { AddOnsModal } from "./AddOnModal";
 import { TicketPack, TicketType, TicketTypeName } from "./types";
+import { PCDGetRequest } from "@pcd/passport-interface";
 
 // @ts-expect-error TMP fix for bad lib
 const _SwipableViews = SwipableViews.default;
@@ -43,7 +51,6 @@ const isEventTicketPCD = (pcd: PCD<unknown, unknown>): pcd is TicketType => {
   // TODO: fetch the pods type as well and prioritize it if theres a conflict.
   return isEdDSATicketPCD(pcd) || isPODTicketPCD(pcd);
 };
-
 const useTickets = (): Array<[string, TicketPack[]]> => {
   const allPCDs = usePCDs();
   const tickets = allPCDs.filter(isEventTicketPCD).reverse();
@@ -84,7 +91,6 @@ const useTickets = (): Array<[string, TicketPack[]]> => {
       const pack = ticketPacks.find(
         (pack) => pack.attendeeEmail === ticket.claim.ticket.attendeeEmail
       );
-
       if (!pack) continue;
       pack.addOns.push(ticket);
     }
@@ -226,14 +232,32 @@ export const NewHomeScreen = (): ReactElement => {
   const windowWidth = useWindowWidth();
   const self = useSelf();
   const navigate = useNavigate();
-  const isLoadedPCDs = useLoadedIssuedPCDs();
-
+  const isLoadedPCDs = useIsSyncSettled();
   const isInvalidUser = useUserForcedToLogout();
+  const location = useLocation();
+
   useEffect(() => {
     if (!self) {
       navigate("/login", { replace: true });
     }
   });
+
+  useLayoutEffect(() => {
+    // if we haven't loaded all pcds yet, dont process the prove request
+    if (!isLoadedPCDs) return;
+
+    if (location.pathname.includes("prove")) {
+      const params = new URLSearchParams(location.search);
+      const request = JSON.parse(
+        params.get("request") ?? "{}"
+      ) as PCDGetRequest;
+      dispatch({
+        type: "set-bottom-modal",
+        modal: { request, modalType: "prove" }
+      });
+      console.log(request);
+    }
+  }, [isLoadedPCDs, location, dispatch]);
 
   const cardWidth =
     (windowWidth > MAX_WIDTH_SCREEN ? MAX_WIDTH_SCREEN : windowWidth) -
