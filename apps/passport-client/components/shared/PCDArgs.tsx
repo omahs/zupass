@@ -38,7 +38,11 @@ import React, {
 } from "react";
 import { SingleValue } from "react-select";
 import styled from "styled-components";
-import { usePCDCollection } from "../../src/appHooks";
+import {
+  useDispatch,
+  usePCDCollection,
+  useProveState
+} from "../../src/appHooks";
 import Select from "./Select";
 import { Accordion, AccordionRef } from "../../new-components/shared/Accordion";
 import { Typography } from "../../new-components/shared/Typography";
@@ -329,11 +333,7 @@ export function StringArgInput({
 
   return (
     <ArgContainer arg={arg} {...rest}>
-      <input
-        value={arg.value}
-        onChange={onChange}
-        disabled={!arg.userProvided}
-      />
+      <input value={arg.value} onChange={onChange} disabled={true} />
     </ArgContainer>
   );
 }
@@ -372,11 +372,7 @@ export function NumberArgInput({
       error={valid ? undefined : "Please enter a number."}
       {...rest}
     >
-      <input
-        value={arg.value}
-        onChange={onChange}
-        disabled={!arg.userProvided}
-      />
+      <input value={arg.value} onChange={onChange} disabled={true} />
     </ArgContainer>
   );
 }
@@ -418,11 +414,7 @@ export function BigIntArgInput({
         <Typography fontWeight={700} color="var(--text-tertiary)" fontSize={14}>
           {arg.displayName?.toUpperCase()}
         </Typography>
-        <Input
-          value={arg.value ?? ""}
-          onChange={onChange}
-          disabled={!arg.userProvided}
-        />
+        <Input value={arg.value ?? ""} onChange={onChange} disabled={true} />
       </ArgWrapper>
     </ArgContainer>
   );
@@ -448,7 +440,7 @@ export function BooleanArgInput({
           type="checkbox"
           checked={arg.value}
           onChange={onChange}
-          disabled={!arg.userProvided}
+          disabled={true}
         />
       }
       {...rest}
@@ -502,7 +494,7 @@ export function ObjectArgInput({
         <TextareaInput
           value={JSON.stringify(arg.value, null, 2)}
           onChange={onChange}
-          disabled={!arg.userProvided}
+          disabled={true}
         />
       </ArgWrapper>
     </ArgContainer>
@@ -589,6 +581,9 @@ export function PCDArgInput({
 }: ArgInputProps<PCDArgument>): JSX.Element {
   const pcdCollection = usePCDCollection();
   const ref = useRef<AccordionRef>(null);
+  const dispatch = useDispatch();
+  const [loaded, setLoaded] = useState(false);
+  const proveState = useProveState();
   const relevantPCDs = useMemo(
     () =>
       pcdCollection
@@ -596,6 +591,17 @@ export function PCDArgInput({
         .filter((pcd) => isValid(pcd) && pcd.type === arg.pcdType),
     [pcdCollection, isValid, arg]
   );
+
+  useEffect(() => {
+    const updateProveState = proveState === undefined || proveState;
+    if (loaded || !updateProveState) return;
+    console.log(arg.displayName, proveState);
+    dispatch({
+      type: "prove-state",
+      eligible: relevantPCDs.length > 0
+    });
+    setLoaded(true);
+  }, [arg, loaded, relevantPCDs, dispatch, proveState]);
 
   const setPCDById = useCallback(
     async (id: string) => {
@@ -706,7 +712,7 @@ export function PCDArgInput({
             value={options.find((option) => option.id === pcd?.id)}
             options={options}
             onChange={onChange}
-            isDisabled={!arg.userProvided}
+            isDisabled={true}
           />
         </SelectContainer>
       )}
