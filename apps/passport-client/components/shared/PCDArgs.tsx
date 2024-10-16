@@ -120,8 +120,6 @@ export function PCDArgs<T extends PCDPackage>({
       true
   );
 
-  console.log("visible", visible);
-  console.log("hidden", hidden, showAll);
   return (
     <ArgsContainer>
       <ArgsInnerContainer>
@@ -156,23 +154,25 @@ export function PCDArgs<T extends PCDPackage>({
             />
           ))}
       </ArgsInnerContainer>
-      <Button2
-        style={{ marginTop: "auto" }}
-        variant="secondary"
-        onClick={(): void => setShowAll((showAll) => !showAll)}
-      >
-        {showAll ? (
-          <ShowMoreButtonInnerContainer>
-            <EyeSlashIcon width={20} height={20} />
-            <Typography>Hide {hidden.length} more inputs</Typography>
-          </ShowMoreButtonInnerContainer>
-        ) : (
-          <ShowMoreButtonInnerContainer>
-            <EyeIcon width={20} height={20} />
-            <Typography>Show {hidden.length} more inputs</Typography>
-          </ShowMoreButtonInnerContainer>
-        )}
-      </Button2>
+      {hidden.length > 0 && (
+        <Button2
+          style={{ marginTop: "auto" }}
+          variant="secondary"
+          onClick={(): void => setShowAll((showAll) => !showAll)}
+        >
+          {showAll ? (
+            <ShowMoreButtonInnerContainer>
+              <EyeSlashIcon width={20} height={20} />
+              <Typography>Hide {hidden.length} more inputs</Typography>
+            </ShowMoreButtonInnerContainer>
+          ) : (
+            <ShowMoreButtonInnerContainer>
+              <EyeIcon width={20} height={20} />
+              <Typography>Show {hidden.length} more inputs</Typography>
+            </ShowMoreButtonInnerContainer>
+          )}
+        </Button2>
+      )}
     </ArgsContainer>
   );
 }
